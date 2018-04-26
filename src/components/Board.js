@@ -59,7 +59,7 @@ export const Board = createClass({
     });
 
     const xhr = new XMLHttpRequest();
-    xhr.open('DELETE', '/app/database/notes', false);
+    xhr.open('DELETE', '/app/database/notes', true);
     xhr.onload = () => alert(xhr.responseText);
 
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");

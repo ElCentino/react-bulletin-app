@@ -21649,13 +21649,10 @@ var Board = exports.Board = (0, _react.createClass)({
 
     this.state.notes.forEach(function (note) {
       newNotes += note.note + "\n";
-      console.log(newNotes);
     });
 
-    //ajax call goes here
-
     var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', '/app/database/notes', false);
+    xhr.open('DELETE', '/app/database/notes', true);
     xhr.onload = function () {
       return alert(xhr.responseText);
     };
@@ -21691,8 +21688,6 @@ var Board = exports.Board = (0, _react.createClass)({
             self.add(sentences.substring(0, 70));
           }
         });
-
-        //self.logToServer(results);
       };
 
       xhr.send();
