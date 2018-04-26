@@ -48,7 +48,7 @@ app.get("*", (req, res) => {
   res.end(`Cant Render page bud`);
 });
 
-app.listen(3000);
+app.listen(process.env.PORT || 8080, () => console.log('Success'));
 
 console.log("Express server started on port 3000");
 
