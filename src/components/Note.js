@@ -47,8 +47,7 @@ export const Note = createClass ({
     }
 
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/app/database/notes', true);
-    xhr.onload = () => alert(xhr.responseText);
+    xhr.open('POST', `/app/database/notes/${this.props.noteId}`, true);
 
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.send(`note=${this.refs.newText.value}`);
@@ -59,7 +58,7 @@ export const Note = createClass ({
   },
 
   remove() {
-    this.props.onRemove(this.props.index);
+    this.props.onRemove(this.props.index, this.props.noteId);
   },
 
   renderDisplay() {

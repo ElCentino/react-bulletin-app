@@ -21603,6 +21603,12 @@ var _reactDom = __webpack_require__(43);
 
 var _Note = __webpack_require__(173);
 
+var _v = __webpack_require__(174);
+
+var _v2 = _interopRequireDefault(_v);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 var Board = exports.Board = (0, _react.createClass)({
 
   propTypes: {
@@ -21640,38 +21646,31 @@ var Board = exports.Board = (0, _react.createClass)({
     arr[i].note = newText;
     this.setState({ notes: arr });
   },
-  remove: function remove(i) {
+  remove: function remove(i, noteId) {
     var arr = this.state.notes;
 
     arr.splice(i, 1);
 
-    var newNotes = "";
-
-    this.state.notes.forEach(function (note) {
-      newNotes += note.note + "\n";
-    });
-
     var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', '/app/database/notes', true);
+    xhr.open('DELETE', '/app/database/notes/' + noteId, true);
     xhr.onload = function () {
       return alert(xhr.responseText);
     };
 
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.send('deleteReq=' + newNotes);
+    xhr.send();
 
     this.setState({ notes: arr });
   },
   eachNote: function eachNote(note, i) {
     return React.createElement(
       _Note.Note,
-      { key: note.id, index: i, onLog: this.logToServer.bind(null, "null"), onChange: this.update, onRemove: this.remove },
+      { key: note.id, index: i, noteId: note.noteId, onLog: this.logToServer.bind(null, "null"), onChange: this.update, onRemove: this.remove },
       note.note
     );
   },
   componentWillMount: function componentWillMount() {
-
-    var self = this;
+    var _this = this;
 
     if (this.props.count) {
 
@@ -21679,27 +21678,51 @@ var Board = exports.Board = (0, _react.createClass)({
       // xhr.open('GET', 'https://baconipsum.com/api/?type=all-meat&sentences=' + this.props.count + '&start-with-lorem=1&callback=?', true);
       xhr.open('GET', '/app/database/notes', true);
       xhr.onload = function () {
-        var results = xhr.responseText;
 
-        results.split('\n').forEach(function (sentences) {
-          if (!sentences.trim()) {
-            return;
-          } else {
-            self.add(sentences.substring(0, 70));
-          }
+        var results = JSON.parse(xhr.responseText);
+
+        results.forEach(function (sentences) {
+
+          _this.add(false, sentences.note.substring(0, 70), sentences.id);
         });
       };
 
       xhr.send();
     }
   },
-  add: function add(text) {
+  addUnsavedDocument: function addUnsavedDocument(id) {
+
+    fetch('/app/database/notes', {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+      },
+      body: 'note=Unsaved Document&noteId=' + id
+
+    }).then(function (response) {
+      return response.text();
+    }).then(function (text) {
+      return alert(text);
+    }).catch(function (error) {
+      return alert(error);
+    });
+  },
+  add: function add(clicked, text, noteId) {
     var arr = this.state.notes;
     arr.push({
       id: this.nextId(),
+      noteId: noteId,
       note: text
     });
+
+    console.log(noteId);
+
     this.setState({ notes: arr });
+
+    if (typeof clicked !== 'undefined' && clicked === true) {
+
+      this.addUnsavedDocument(noteId);
+    }
   },
   render: function render() {
 
@@ -21707,7 +21730,7 @@ var Board = exports.Board = (0, _react.createClass)({
       'div',
       { className: 'board' },
       this.state.notes.map(this.eachNote),
-      React.createElement('button', { className: 'btn btn-success btn-sm float-right glyphicon-plus', onClick: this.add.bind(null, "New Text"), style: { position: "fixed", marginTop: "10px" } })
+      React.createElement('button', { className: 'btn btn-success btn-sm float-right glyphicon-plus', onClick: this.add.bind(null, true, "Unsaved Document", (0, _v2.default)()), style: { position: "fixed", marginTop: "10px" } })
     );
   }
 });
@@ -21768,10 +21791,7 @@ var Note = exports.Note = (0, _react.createClass)({
     }
 
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', '/app/database/notes', true);
-    xhr.onload = function () {
-      return alert(xhr.responseText);
-    };
+    xhr.open('POST', '/app/database/notes/' + this.props.noteId, true);
 
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.send('note=' + this.refs.newText.value);
@@ -21781,7 +21801,7 @@ var Note = exports.Note = (0, _react.createClass)({
     });
   },
   remove: function remove() {
-    this.props.onRemove(this.props.index);
+    this.props.onRemove(this.props.index, this.props.noteId);
   },
   renderDisplay: function renderDisplay() {
     var children = this.props.children;
@@ -21819,6 +21839,188 @@ var Note = exports.Note = (0, _react.createClass)({
     }
   }
 });
+
+/***/ }),
+/* 174 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var rng = __webpack_require__(175);
+var bytesToUuid = __webpack_require__(176);
+
+// **`v1()` - Generate time-based UUID**
+//
+// Inspired by https://github.com/LiosK/UUID.js
+// and http://docs.python.org/library/uuid.html
+
+var _nodeId;
+var _clockseq;
+
+// Previous uuid creation time
+var _lastMSecs = 0;
+var _lastNSecs = 0;
+
+// See https://github.com/broofa/node-uuid for API details
+function v1(options, buf, offset) {
+  var i = buf && offset || 0;
+  var b = buf || [];
+
+  options = options || {};
+  var node = options.node || _nodeId;
+  var clockseq = options.clockseq !== undefined ? options.clockseq : _clockseq;
+
+  // node and clockseq need to be initialized to random values if they're not
+  // specified.  We do this lazily to minimize issues related to insufficient
+  // system entropy.  See #189
+  if (node == null || clockseq == null) {
+    var seedBytes = rng();
+    if (node == null) {
+      // Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
+      node = _nodeId = [
+        seedBytes[0] | 0x01,
+        seedBytes[1], seedBytes[2], seedBytes[3], seedBytes[4], seedBytes[5]
+      ];
+    }
+    if (clockseq == null) {
+      // Per 4.2.2, randomize (14 bit) clockseq
+      clockseq = _clockseq = (seedBytes[6] << 8 | seedBytes[7]) & 0x3fff;
+    }
+  }
+
+  // UUID timestamps are 100 nano-second units since the Gregorian epoch,
+  // (1582-10-15 00:00).  JSNumbers aren't precise enough for this, so
+  // time is handled internally as 'msecs' (integer milliseconds) and 'nsecs'
+  // (100-nanoseconds offset from msecs) since unix epoch, 1970-01-01 00:00.
+  var msecs = options.msecs !== undefined ? options.msecs : new Date().getTime();
+
+  // Per 4.2.1.2, use count of uuid's generated during the current clock
+  // cycle to simulate higher resolution clock
+  var nsecs = options.nsecs !== undefined ? options.nsecs : _lastNSecs + 1;
+
+  // Time since last uuid creation (in msecs)
+  var dt = (msecs - _lastMSecs) + (nsecs - _lastNSecs)/10000;
+
+  // Per 4.2.1.2, Bump clockseq on clock regression
+  if (dt < 0 && options.clockseq === undefined) {
+    clockseq = clockseq + 1 & 0x3fff;
+  }
+
+  // Reset nsecs if clock regresses (new clockseq) or we've moved onto a new
+  // time interval
+  if ((dt < 0 || msecs > _lastMSecs) && options.nsecs === undefined) {
+    nsecs = 0;
+  }
+
+  // Per 4.2.1.2 Throw error if too many uuids are requested
+  if (nsecs >= 10000) {
+    throw new Error('uuid.v1(): Can\'t create more than 10M uuids/sec');
+  }
+
+  _lastMSecs = msecs;
+  _lastNSecs = nsecs;
+  _clockseq = clockseq;
+
+  // Per 4.1.4 - Convert from unix epoch to Gregorian epoch
+  msecs += 12219292800000;
+
+  // `time_low`
+  var tl = ((msecs & 0xfffffff) * 10000 + nsecs) % 0x100000000;
+  b[i++] = tl >>> 24 & 0xff;
+  b[i++] = tl >>> 16 & 0xff;
+  b[i++] = tl >>> 8 & 0xff;
+  b[i++] = tl & 0xff;
+
+  // `time_mid`
+  var tmh = (msecs / 0x100000000 * 10000) & 0xfffffff;
+  b[i++] = tmh >>> 8 & 0xff;
+  b[i++] = tmh & 0xff;
+
+  // `time_high_and_version`
+  b[i++] = tmh >>> 24 & 0xf | 0x10; // include version
+  b[i++] = tmh >>> 16 & 0xff;
+
+  // `clock_seq_hi_and_reserved` (Per 4.2.2 - include variant)
+  b[i++] = clockseq >>> 8 | 0x80;
+
+  // `clock_seq_low`
+  b[i++] = clockseq & 0xff;
+
+  // `node`
+  for (var n = 0; n < 6; ++n) {
+    b[i + n] = node[n];
+  }
+
+  return buf ? buf : bytesToUuid(b);
+}
+
+module.exports = v1;
+
+
+/***/ }),
+/* 175 */
+/***/ (function(module, exports) {
+
+// Unique ID creation requires a high quality random # generator.  In the
+// browser this is a little complicated due to unknown quality of Math.random()
+// and inconsistent support for the `crypto` API.  We do the best we can via
+// feature-detection
+
+// getRandomValues needs to be invoked in a context where "this" is a Crypto implementation.
+var getRandomValues = (typeof(crypto) != 'undefined' && crypto.getRandomValues.bind(crypto)) ||
+                      (typeof(msCrypto) != 'undefined' && msCrypto.getRandomValues.bind(msCrypto));
+if (getRandomValues) {
+  // WHATWG crypto RNG - http://wiki.whatwg.org/wiki/Crypto
+  var rnds8 = new Uint8Array(16); // eslint-disable-line no-undef
+
+  module.exports = function whatwgRNG() {
+    getRandomValues(rnds8);
+    return rnds8;
+  };
+} else {
+  // Math.random()-based (RNG)
+  //
+  // If all else fails, use Math.random().  It's fast, but is of unspecified
+  // quality.
+  var rnds = new Array(16);
+
+  module.exports = function mathRNG() {
+    for (var i = 0, r; i < 16; i++) {
+      if ((i & 0x03) === 0) r = Math.random() * 0x100000000;
+      rnds[i] = r >>> ((i & 0x03) << 3) & 0xff;
+    }
+
+    return rnds;
+  };
+}
+
+
+/***/ }),
+/* 176 */
+/***/ (function(module, exports) {
+
+/**
+ * Convert array of 16 byte values to UUID string format of the form:
+ * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+ */
+var byteToHex = [];
+for (var i = 0; i < 256; ++i) {
+  byteToHex[i] = (i + 0x100).toString(16).substr(1);
+}
+
+function bytesToUuid(buf, offset) {
+  var i = offset || 0;
+  var bth = byteToHex;
+  return bth[buf[i++]] + bth[buf[i++]] +
+          bth[buf[i++]] + bth[buf[i++]] + '-' +
+          bth[buf[i++]] + bth[buf[i++]] + '-' +
+          bth[buf[i++]] + bth[buf[i++]] + '-' +
+          bth[buf[i++]] + bth[buf[i++]] + '-' +
+          bth[buf[i++]] + bth[buf[i++]] +
+          bth[buf[i++]] + bth[buf[i++]] +
+          bth[buf[i++]] + bth[buf[i++]];
+}
+
+module.exports = bytesToUuid;
+
 
 /***/ })
 /******/ ]);

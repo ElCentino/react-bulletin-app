@@ -2,13 +2,10 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const fs = require('fs');
+const database = require('./database');
+const uuidv1 = require('uuid/v1');
 
 const app = express();
-
-app.use((req, res, next)=> {
-  console.log(`${req.method} Request for ${req.url} :: Status code ${res.statusCode}`);
-  next();
-});
 
 app.use(cors());
 
@@ -24,22 +21,33 @@ app.post('/logs/bullettin/app', (req, res) => {
 });
 
 app.get('/app/database/notes', (req, res) => {
-  fs.createReadStream('./database/notes.txt').pipe(res);
+
+  database.query("SELECT * FROM notes", result => {
+
+      res.json(result);
+  });
 });
 
 app.post('/app/database/notes', (req, res) => {
-  fs.appendFileSync('./database/notes.txt', req.body.note.trim() + "\n");
+  
+  database.query(`INSERT INTO notes(id, note) VALUES('${req.body.noteId}', '${req.body.note}')`, response => {
 
-  res.writeHead(200, {"Content-Type" : "text/plain"});
-  res.end("Note Saved");
+    res.end("Unsaved Note Added");
+  });
 });
 
-app.delete('/app/database/notes', (req, res) => {
+app.post('/app/database/notes/:noteId', (req, res) => {
+  
+    database.query(`UPDATE notes SET note = '${req.body.note}' WHERE id='${req.params.noteId}'`);
+    res.end("Note Saved");
+});
 
-  fs.writeFileSync('./database/notes.txt', req.body.deleteReq.trim() + "\n");
+app.delete('/app/database/notes/:noteId', (req, res) => {
 
-  res.writeHead(200, {"Content-Type" : "text/plain"});
-  res.end("Note Deleted");
+  database.query(`DELETE FROM notes WHERE id='${req.params.noteId}'`, response => {
+
+    res.end("Note Deleted");
+  });
 });
 
 app.get("*", (req, res) => {
@@ -48,7 +56,7 @@ app.get("*", (req, res) => {
   res.end(`Cant Render page bud`);
 });
 
-app.listen(process.env.PORT || 8080, () => console.log('Success'));
+app.listen(process.env.PORT || 3000, () => console.log('Success'));
 
 console.log("Express server started on port 3000");
 
