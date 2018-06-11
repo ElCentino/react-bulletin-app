@@ -2,6 +2,7 @@ import { createClass } from 'react'
 import { render } from 'react-dom'
 import { Note } from './Note'
 import uuid from 'uuid/v1'
+import { Panel } from './panel';
 
 export const Board = createClass({
 
@@ -22,6 +23,13 @@ export const Board = createClass({
       notes: [
       ]
     };
+  },
+
+  toggler(state) {
+
+    var currentState = state;
+
+    return () => currentState = !currentState; 
   },
 
   logToServer(message) {
@@ -88,6 +96,8 @@ export const Board = createClass({
 
       xhr.send();
     }
+
+    this.sideBarState = this.toggler(false);
   },
 
 
@@ -122,11 +132,29 @@ export const Board = createClass({
 
   },
 
+  toggleSidebar() {
+
+    var state = this.sideBarState();
+
+    if(state === true) {
+
+      document.getElementById("side-bar").style.width = "250px";
+      
+      $(".board, button, .note").not("#side-bar").css("margin-left", "250px");
+    } else {
+
+      document.getElementById("side-bar").style.width = "0";
+      $(".board, button").not("#side-bar").css("margin-left", "0");
+    }
+  },
+
   render() {
 
     return (
-      <div className="board">
+      <div className="board" id="board">
+        <Panel image="/images/140.jpg" />
         {this.state.notes.map(this.eachNote)}
+        <button className="btn btn-info btn-sm float-left glyphicon glyphicon-th-large bt-expose" onClick={this.toggleSidebar}  style={{position:"fixed", marginTop: "10px", top: "10px", left: "10px"}}></button>
         <button className="btn btn-success btn-sm float-right glyphicon-plus" onClick={this.add.bind(null, true, "Unsaved Document", uuid())} style={{position:"fixed", marginTop: "10px"}}></button>
       </div>
     );
