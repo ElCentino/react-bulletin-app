@@ -11065,7 +11065,6 @@ var Board = exports.Board = (0, _react.createClass)({
 
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/logs/bullettin/app', true);
-    xhr.onload = function () {};
 
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.send('message=' + message);
@@ -11086,9 +11085,6 @@ var Board = exports.Board = (0, _react.createClass)({
 
     var xhr = new XMLHttpRequest();
     xhr.open('DELETE', '/app/database/notes/' + noteId, true);
-    xhr.onload = function () {
-      return alert(xhr.responseText);
-    };
 
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.send();
@@ -11137,7 +11133,7 @@ var Board = exports.Board = (0, _react.createClass)({
     }).then(function (response) {
       return response.text();
     }).then(function (text) {
-      return alert(text);
+      return console.log(text);
     }).catch(function (error) {
       return alert(error);
     });
@@ -11149,8 +11145,6 @@ var Board = exports.Board = (0, _react.createClass)({
       noteId: noteId,
       note: text
     });
-
-    console.log(noteId);
 
     this.setState({ notes: arr });
 
