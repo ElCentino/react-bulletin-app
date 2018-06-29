@@ -10,9 +10,13 @@ const { connect } = require('./models/connection')
 
 let NoteStore;
 
-connect(() => {
-  NoteStore  = require('./models/NoteStore');
-});
+connect()
+  .then(result => {
+    console.log(result);
+
+      NoteStore  = require('./models/NoteStore');
+  })
+  .catch((reason) => console.log(reason));
 
 const app = express();
 

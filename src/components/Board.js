@@ -29,16 +29,13 @@ export const Board = createClass({
 
     var currentState = state;
 
-    return () => currentState = !currentState; 
+    return () => currentState = !currentState;
   },
 
   logToServer(message) {
 
     const xhr = new XMLHttpRequest();
     xhr.open('POST', '/logs/bullettin/app', true);
-    xhr.onload = () => {
-
-    };
 
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.send(`message=${message}`);
@@ -63,7 +60,6 @@ export const Board = createClass({
 
     const xhr = new XMLHttpRequest();
     xhr.open('DELETE', `/app/database/notes/${noteId}`, true);
-    xhr.onload = () => alert(xhr.responseText);
 
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.send();
@@ -110,9 +106,9 @@ export const Board = createClass({
       },
       body: `note=Unsaved Document&noteId=${id}`
 
-    }).then(response => response.text()).then(text => alert(text)).catch(error => alert(error));
+    }).then(response => response.text()).then(text => console.log(text)).catch(error => alert(error));
   },
-  
+
   add(clicked, text, noteId) {
     let arr = this.state.notes;
     arr.push({
@@ -137,7 +133,7 @@ export const Board = createClass({
     if(state === true) {
 
       document.getElementById("side-bar").style.width = "250px";
-      
+
       $(".board, button, .note").not("#side-bar").css("margin-left", "250px");
     } else {
 

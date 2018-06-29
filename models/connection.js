@@ -3,12 +3,14 @@ require('dotenv').config()
 
 mongoose.Promise = global.Promise;
 
-module.exports.connect = callback => {
+module.exports.connect = () => {
 
-  mongoose.connect(process.env.ENVIRON === 'testing' ? `${process.env.NOSQLDB}/${process.env.DB_TEST}` : `${process.env.NOSQLDB}/${process.env.DB_NOTES}`);
-  mongoose.connection
-    .once('open', () => console.log('Connected to MongoDB'))
-    .on('error', error => console.error('Error : ' + error));
+  return new Promise((resolve, reject) => {
 
-  callback();
+    mongoose.connect(process.env.ENVIRON === 'testing' ? `${process.env.NOSQLDB}/${process.env.DB_TEST}` : `${process.env.NOSQLDB}/${process.env.DB_NOTES}`);
+    mongoose.connection
+      .once('open', () => resolve('Connected to MongoDB'))
+      .on('error', error => reject('Error : ' + error));
+
+  });
 }
