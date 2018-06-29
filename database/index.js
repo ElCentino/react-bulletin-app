@@ -1,26 +1,30 @@
-const mysql = require('mysql');
 
-const conn = mysql.createConnection({
-    host: "db4free.net",
-    user: "century",
-    password: "rock.roll",
-    database: "reactapps"
-});
+if(process.env.DATABASE === 'SQL') {
 
-conn.connect(err => {
+  const mysql = require('mysql');
 
-    if(err) throw err;
+  const conn = mysql.createConnection({
+      host: "db4free.net",
+      user: "century",
+      password: "rock.roll",
+      database: "reactapps"
+  });
 
-    console.log("Connected to database");
-});
+  conn.connect(err => {
 
-module.exports.query = function(statement, callback) {
+      if(err) throw err;
 
-    conn.query(statement, (err, result, fields) => {
+      console.log("Connected to database");
+  });
 
-        if(err) throw err;
+  module.exports.query = function(statement, callback) {
 
-        if(callback) return callback(result, fields);
-        
-    });
-};
+      conn.query(statement, (err, result, fields) => {
+
+          if(err) throw err;
+
+          if(callback) return callback(result, fields);
+
+      });
+  };
+}

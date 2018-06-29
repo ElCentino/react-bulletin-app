@@ -121,8 +121,6 @@ export const Board = createClass({
       note: text
     });
 
-    console.log(noteId);
-
     this.setState({notes: arr});
 
     if(typeof clicked !== 'undefined' && clicked === true) {

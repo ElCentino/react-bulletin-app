@@ -1,9 +1,18 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const fs = require('fs');
-const database = require('./database');
-const uuidv1 = require('uuid/v1');
+const express = require('express')
+const http = require('http');
+const bodyParser = require('body-parser')
+const cors = require('cors')
+const fs = require('fs')
+const createError = require('http-errors')
+const database = require('./database')
+const uuidv1 = require('uuid/v1')
+const { connect } = require('./models/connection')
+
+let NoteStore;
+
+connect(() => {
+  NoteStore  = require('./models/NoteStore');
+});
 
 const app = express();
 
@@ -22,42 +31,96 @@ app.post('/logs/bullettin/app', (req, res) => {
 
 app.get('/app/database/notes', (req, res) => {
 
-  database.query("SELECT * FROM notes", result => {
+  if(process.env.DATABASE !== 'NOSQL') {
 
-      res.json(result);
-  });
+    database.query("SELECT * FROM notes", result => {
+
+        res.json(result);
+    });
+  } else {
+
+    NoteStore.find({}, (err, notes) => {
+
+      if(err) throw err;
+
+      res.json(notes);
+    });
+  }
 });
 
 app.post('/app/database/notes', (req, res) => {
-  
-  database.query(`INSERT INTO notes(id, note) VALUES('${req.body.noteId}', '${req.body.note}')`, response => {
 
-    res.end("Unsaved Note Added");
-  });
+  if(process.env.DATABASE !== 'NOSQL') {
+
+    database.query(`INSERT INTO notes(id, note) VALUES('${req.body.noteId}', '${req.body.note}')`, response => {
+
+      res.end("Unsaved Note Added");
+    })
+  } else {
+
+    const { noteId : id, note: notes } = req.body
+
+    const note = new NoteStore({
+      id, note: notes
+    });
+
+    note.save()
+      .then(() => res.end("Unsaved Note Added"));
+  }
 });
 
 app.post('/app/database/notes/:noteId', (req, res) => {
-  
+
+  if(process.env.DATABASE !== 'NOSQL') {
+
     database.query(`UPDATE notes SET note = '${req.body.note}' WHERE id='${req.params.noteId}'`);
     res.end("Note Saved");
+  } else {
+
+    console.log(req.params.noteId)
+
+    NoteStore.findOne({id: req.params.noteId}, (err, note) => {
+
+      if(err) console.log('No Notes found');
+
+      if(!note) {
+        console.log('No Notes found');
+        return;
+      }
+
+      note.id = req.params.noteId;
+      note.note = req.body.note;
+      note.save()
+        .then(() => res.end("Note Saved"));
+    });
+  }
+
+
 });
 
 app.delete('/app/database/notes/:noteId', (req, res) => {
 
-  database.query(`DELETE FROM notes WHERE id='${req.params.noteId}'`, response => {
+  if(process.env.DATABASE !== 'NOSQL') {
 
-    res.end("Note Deleted");
-  });
+    database.query(`DELETE FROM notes WHERE id='${req.params.noteId}'`, response => {
+
+      res.end("Note Deleted");
+    });
+  } else {
+
+    NoteStore.remove({ id: req.params.noteId })
+      .exec()
+      .then(() => res.end('Note Deleted'));
+  }
 });
 
-app.get("*", (req, res) => {
-  res.writeHead(404, {"Content-type" : "text/plain"});
-  console.log(`${req.method} Request for ${req.url} :: Status code ${res.statusCode}`);
-  res.end(`Cant Render page bud`);
+app.use((req, res, next) => {
+  next(createError(404));
 });
 
-app.listen(process.env.PORT || 3000, () => console.log('Success'));
+app.use((err, req, res, next) => {
+  console.log("error " + err.message);
+  res.status(err.status || 500).send("Something went wrong");
+});
 
-console.log("Express server started on port 3000");
-
-exports = app;
+module.exports.app = app;
